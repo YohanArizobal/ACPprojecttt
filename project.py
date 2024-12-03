@@ -2,8 +2,8 @@ class Person:
     def __init__(self, name="", age=0, gender=False):
         self.name = name
         self.age = age
-        self.gender = gender  # True for Male, False for Female
-        self.height = 0  # Level in the tree
+        self.gender = gender 
+        self.height = 0 
         self.child = None
         self.sibling = None
 
@@ -29,7 +29,7 @@ class Person:
 
 class FamilyTree:
     def __init__(self):
-        self.root = None  # Root of the family tree
+        self.root = None 
 
     def add_person(self):
         """Adds a new person to the family tree."""
@@ -125,21 +125,21 @@ class FamilyTree:
         print(f"Age: {person.age}")
         print(f"Gender: {'Male' if person.gender else 'Female'}")
 
-        # Display children
+        
         if person.child:
             children = self._get_names(person.child)
             print(f"Children: {', '.join(children)}")
         else:
             print("No children.")
 
-        # Display siblings
+       
         siblings = self._get_names(person.sibling)
         if siblings:
             print(f"Siblings: {', '.join(siblings)}")
         else:
             print("No siblings.")
 
-        # Display parent
+        
         parent = self._find_parent(self.root, person)
         if parent:
             print(f"Parent: {parent.name}")
@@ -186,7 +186,7 @@ class FamilyTree:
             print(f"Person '{name}' not found.\n")
             return
 
-        # Remove from child list
+        
         if parent.child and parent.child.name == name:
             parent.child = parent.child.sibling
         else:
