@@ -1,13 +1,14 @@
 class Person:
-    def __init__(self):
-        self.name = ""
-        self.age = 0
-        self.gender = False
-        self.height = 0
+    def __init__(self, name="", age=0, gender=False):
+        self.name = name
+        self.age = age
+        self.gender = gender  # True for Male, False for Female
+        self.height = 0  # Level in the tree
         self.child = None
         self.sibling = None
 
-    def get_data(self):
+    def input_data(self):
+        """Collects data for a person."""
         self.name = input("Enter name: ").strip()
         while True:
             try:
@@ -18,195 +19,222 @@ class Person:
             except ValueError as e:
                 print(e)
         while True:
-            sex = input("Enter the gender (m/f): ").strip().lower()
-            if sex in ('m', 'f'):
-                self.gender = True if sex == 'm' else False
+            gender_input = input("Enter gender (m/f): ").strip().lower()
+            if gender_input in ("m", "f"):
+                self.gender = True if gender_input == "m" else False
                 break
             else:
                 print("Invalid input. Please enter 'm' or 'f'.")
-        print()
 
 
 class FamilyTree:
     def __init__(self):
-        self.root = None
-        self.is_root_set = False
+        self.root = None  # Root of the family tree
 
-    def add_new_person(self):
-        temp = Person()
-        temp.get_data()
-        if self.root is None:
-            self.root = temp
-            self.is_root_set = True
-        else:
-            related_name = input("\nEnter the name of the related person: ").strip()
-            print(f"\n1. Child\n2. Sibling")
+    def add_person(self):
+        """Adds a new person to the family tree."""
+        new_person = Person()
+        new_person.input_data()
+
+        if not self.root:
+            self.root = new_person
+            print("Root person added successfully.\n")
+            return
+
+        related_name = input("\nEnter the name of the related person: ").strip()
+        related_person = self.search(related_name)
+
+        if not related_person:
+            print(f"Person '{related_name}' not found. New person not added.\n")
+            return
+
+        print("Relationship Options:")
+        print("[1] Add as Child")
+        print("[2] Add as Sibling")
+        while True:
             try:
-                relationship = int(input(f"Enter the relationship type for {temp.name} with {related_name}: "))
-            except ValueError:
-                print("Invalid input. Person isn't added.\n")
-                return
+                relationship = int(input("Enter relationship type (1/2): "))
+                if relationship == 1:
+                    self.add_child(related_person, new_person)
+                elif relationship == 2:
+                    self.add_sibling(related_person, new_person)
+                else:
+                    raise ValueError("Invalid choice. Enter 1 or 2.")
+                break
+            except ValueError as e:
+                print(e)
 
-            related_person = self.search(related_name)
-            if related_person is None:
-                print("Related person not found. Person isn't added.\n")
-                return
+        print(f"Person '{new_person.name}' added successfully.\n")
 
-            if relationship == 1:
-                self.add_child(related_person, temp)
-            elif relationship == 2:
-                self.add_sibling(related_person, temp)
-            else:
-                print("Invalid choice. Person isn't added.\n")
-                return
-        print("\nPerson added successfully.\n")
-
-    def add_sibling(self, person1, person2):
-        while person1.sibling:
-            person1 = person1.sibling
-        person1.sibling = person2
-        person2.height = person1.height
-
-    def add_child(self, person1, person2):
-        if person1.child is None:
-            person1.child = person2
+    def add_child(self, parent, child):
+        """Adds a child to the specified parent."""
+        if not parent.child:
+            parent.child = child
         else:
-            self.add_sibling(person1.child, person2)
-        person2.height = person1.height + 1
+            self.add_sibling(parent.child, child)
+        child.height = parent.height + 1
+
+    def add_sibling(self, sibling, new_sibling):
+        """Adds a sibling to the specified sibling."""
+        while sibling.sibling:
+            sibling = sibling.sibling
+        sibling.sibling = new_sibling
+        new_sibling.height = sibling.height
 
     def search(self, name):
-        if not self.root:
-            print("Tree is empty.")
-            return None
-        return self.search_helper(self.root, name)
+        """Searches for a person by name in the family tree."""
+        return self._search_recursive(self.root, name)
 
-    def search_helper(self, current, name):
+    def _search_recursive(self, current, name):
         if not current:
             return None
         if current.name == name:
             return current
-        child_result = self.search_helper(current.child, name)
-        if child_result:
-            return child_result
-        return self.search_helper(current.sibling, name)
+        return self._search_recursive(current.child, name) or self._search_recursive(current.sibling, name)
 
-    def display_tree(self, person, level=0):
+    def display_tree(self):
+        """Displays the family tree."""
+        if not self.root:
+            print("Family Tree is empty.\n")
+        else:
+            print("Family Tree:")
+            self._display_recursive(self.root)
+
+    def _display_recursive(self, person, level=0):
+        """Helper method to display the tree recursively."""
         if not person:
             return
         gender = "Male" if person.gender else "Female"
         print("  " * level + f"|-- {person.name} (Age: {person.age}, Gender: {gender})")
-        self.display_tree(person.child, level + 1)
-        self.display_tree(person.sibling, level)
+        self._display_recursive(person.child, level + 1)
+        self._display_recursive(person.sibling, level)
 
     def delete_tree(self):
+        """Deletes the entire family tree."""
         self.root = None
-        print("Tree Deleted...\n")
+        print("Family tree deleted successfully.\n")
 
-    def show_person(self, search_name):
-        person = self.search(search_name)
+    def show_person(self, name):
+        """Displays details of a specific person."""
+        person = self.search(name)
         if not person:
-            print("Person not found.")
-        else:
-            gender = "Male" if person.gender else "Female"
-            print(f"\nName: {person.name}")
-            print(f"Age: {person.age}")
-            print(f"Gender: {gender}")
-            if person.child:
-                print("Children: ", end="")
-                child = person.child
-                while child:
-                    print(child.name, end=" ")
-                    child = child.sibling
-                print()
-            else:
-                print("No children.")
-            if person.sibling:
-                print("Siblings: ", end="")
-                sibling = person.sibling
-                while sibling:
-                    print(sibling.name, end=" ")
-                    sibling = sibling.sibling
-                print()
-            else:
-                print("No siblings.")
-            if person != self.root:
-                parent = self.find_parent(self.root, person)
-                if parent:
-                    print(f"Parent: {parent.name}")
-                else:
-                    print("Parent not found.")
-            else:
-                print("No parent. Root node.")
-
-    def find_parent(self, current, child):
-        if not current:
-            return None
-        temp = current.child
-        while temp:
-            if temp == child:
-                return current
-            temp = temp.sibling
-        sibling_result = self.find_parent(current.sibling, child)
-        if sibling_result:
-            return sibling_result
-        return self.find_parent(current.child, child)
-
-    def remove_person(self, name):
-        if not self.root:
-            print("Tree is empty.")
+            print(f"Person '{name}' not found.\n")
             return
 
-        parent = self.find_parent(self.root, self.search(name))
+        print(f"\nName: {person.name}")
+        print(f"Age: {person.age}")
+        print(f"Gender: {'Male' if person.gender else 'Female'}")
+
+        # Display children
+        if person.child:
+            children = self._get_names(person.child)
+            print(f"Children: {', '.join(children)}")
+        else:
+            print("No children.")
+
+        # Display siblings
+        siblings = self._get_names(person.sibling)
+        if siblings:
+            print(f"Siblings: {', '.join(siblings)}")
+        else:
+            print("No siblings.")
+
+        # Display parent
+        parent = self._find_parent(self.root, person)
         if parent:
-            if parent.child and parent.child.name == name:
-                parent.child = parent.child.sibling
-            else:
-                temp = parent.child
-                while temp and temp.sibling and temp.sibling.name != name:
-                    temp = temp.sibling
-                if temp and temp.sibling:
-                    temp.sibling = temp.sibling.sibling
-        print("Person deleted successfully.")
+            print(f"Parent: {parent.name}")
+        else:
+            print("No parent (Root person).")
+
+    def _get_names(self, person):
+        """Helper to get all names from a linked list."""
+        names = []
+        while person:
+            names.append(person.name)
+            person = person.sibling
+        return names
+
+    def _find_parent(self, current, target):
+        """Finds the parent of a specified person."""
+        if not current:
+            return None
+        if current.child == target:
+            return current
+        for sibling in self._iterate_siblings(current.child):
+            if sibling == target:
+                return current
+        return self._find_parent(current.child, target) or self._find_parent(current.sibling, target)
+
+    def _iterate_siblings(self, person):
+        """Iterates through siblings."""
+        while person:
+            yield person
+            person = person.sibling
+
+    def remove_person(self, name):
+        """Removes a person by name from the tree."""
+        if not self.root:
+            print("Family tree is empty.\n")
+            return
+
+        if self.root.name == name:
+            print("Cannot delete root person directly. Delete the tree instead.\n")
+            return
+
+        parent = self._find_parent(self.root, self.search(name))
+        if not parent:
+            print(f"Person '{name}' not found.\n")
+            return
+
+        # Remove from child list
+        if parent.child and parent.child.name == name:
+            parent.child = parent.child.sibling
+        else:
+            prev_sibling = None
+            for sibling in self._iterate_siblings(parent.child):
+                if sibling.name == name:
+                    if prev_sibling:
+                        prev_sibling.sibling = sibling.sibling
+                    break
+                prev_sibling = sibling
+
+        print(f"Person '{name}' removed successfully.\n")
 
 
 def main():
     tree = FamilyTree()
     while True:
-        print("\nFamily Tree Creator:")
+        print("\nFamily Tree Manager:")
         print("[1] Add Person")
         print("[2] Display Family Tree")
-        print("[3] Search Person's details")
-        print("[4] Delete Tree")
-        print("[5] Delete Person")
+        print("[3] Show Person Details")
+        print("[4] Delete Entire Tree")
+        print("[5] Remove Person")
         print("[0] Exit")
 
         try:
             choice = int(input("Enter your choice: "))
         except ValueError:
-            print("Invalid input. Try again.")
+            print("Invalid input. Please enter a number between 0 and 5.\n")
             continue
 
         if choice == 1:
-            tree.add_new_person()
+            tree.add_person()
         elif choice == 2:
-            if tree.root:
-                print("Family Tree:")
-                tree.display_tree(tree.root)
-            else:
-                print("Family Tree is empty.")
+            tree.display_tree()
         elif choice == 3:
-            name = input("Enter the name of the person to show: ").strip()
+            name = input("Enter name to search: ").strip()
             tree.show_person(name)
         elif choice == 4:
             tree.delete_tree()
         elif choice == 5:
-            name = input("Enter the name of the person to delete: ").strip()
+            name = input("Enter name to remove: ").strip()
             tree.remove_person(name)
         elif choice == 0:
-            print("Exiting the program...")
+            print("Exiting Family Tree Manager. Goodbye!")
             break
         else:
-            print("Invalid choice. Please try again.")
+            print("Invalid choice. Try again.\n")
 
 
 if __name__ == "__main__":
