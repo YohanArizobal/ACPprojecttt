@@ -2,13 +2,11 @@ class Person:
     def __init__(self, name="", age=0, gender=False):
         self.name = name
         self.age = age
-        self.gender = gender 
-        self.height = 0 
+        self.gender = gender
         self.child = None
         self.sibling = None
 
     def input_data(self):
-        """Collects data for a person."""
         self.name = input("Enter name: ").strip()
         while True:
             try:
@@ -29,10 +27,10 @@ class Person:
 
 class FamilyTree:
     def __init__(self):
-        self.root = None 
+        self.root = None
 
     def add_person(self):
-        """Adds a new person to the family tree."""
+        """Adds a new person to the tree."""
         new_person = Person()
         new_person.input_data()
 
@@ -53,10 +51,10 @@ class FamilyTree:
         print("[2] Add as Sibling")
         while True:
             try:
-                relationship = int(input("Enter relationship type (1/2): "))
-                if relationship == 1:
+                choice = int(input("Enter relationship type (1/2): "))
+                if choice == 1:
                     self.add_child(related_person, new_person)
-                elif relationship == 2:
+                elif choice == 2:
                     self.add_sibling(related_person, new_person)
                 else:
                     raise ValueError("Invalid choice. Enter 1 or 2.")
@@ -67,22 +65,18 @@ class FamilyTree:
         print(f"Person '{new_person.name}' added successfully.\n")
 
     def add_child(self, parent, child):
-        """Adds a child to the specified parent."""
         if not parent.child:
             parent.child = child
         else:
             self.add_sibling(parent.child, child)
-        child.height = parent.height + 1
 
     def add_sibling(self, sibling, new_sibling):
-        """Adds a sibling to the specified sibling."""
         while sibling.sibling:
             sibling = sibling.sibling
         sibling.sibling = new_sibling
-        new_sibling.height = sibling.height
 
     def search(self, name):
-        """Searches for a person by name in the family tree."""
+        """Searches for a person by name in the tree."""
         return self._search_recursive(self.root, name)
 
     def _search_recursive(self, current, name):
@@ -93,7 +87,7 @@ class FamilyTree:
         return self._search_recursive(current.child, name) or self._search_recursive(current.sibling, name)
 
     def display_tree(self):
-        """Displays the family tree."""
+        """Displays the entire tree."""
         if not self.root:
             print("Family Tree is empty.\n")
         else:
@@ -101,7 +95,6 @@ class FamilyTree:
             self._display_recursive(self.root)
 
     def _display_recursive(self, person, level=0):
-        """Helper method to display the tree recursively."""
         if not person:
             return
         gender = "Male" if person.gender else "Female"
@@ -109,13 +102,8 @@ class FamilyTree:
         self._display_recursive(person.child, level + 1)
         self._display_recursive(person.sibling, level)
 
-    def delete_tree(self):
-        """Deletes the entire family tree."""
-        self.root = None
-        print("Family tree deleted successfully.\n")
-
     def show_person(self, name):
-        """Displays details of a specific person."""
+        """Displays details of a specific person, including siblings, children, and parent."""
         person = self.search(name)
         if not person:
             print(f"Person '{name}' not found.\n")
@@ -125,38 +113,30 @@ class FamilyTree:
         print(f"Age: {person.age}")
         print(f"Gender: {'Male' if person.gender else 'Female'}")
 
-        
-        if person.child:
-            children = self._get_names(person.child)
-            print(f"Children: {', '.join(children)}")
-        else:
-            print("No children.")
-
-       
-        siblings = self._get_names(person.sibling)
-        if siblings:
-            print(f"Siblings: {', '.join(siblings)}")
-        else:
-            print("No siblings.")
-
-        
+        # Show siblings
         parent = self._find_parent(self.root, person)
-        if parent:
-            print(f"Parent: {parent.name}")
-        else:
-            print("No parent (Root person).")
+        siblings = self._get_names(parent.child if parent else self.root, exclude=person.name)
+        print(f"Siblings: {', '.join(siblings) if siblings else 'No siblings.'}")
 
-    def _get_names(self, person):
-        """Helper to get all names from a linked list."""
+        # Show children
+        children = self._get_names(person.child)
+        print(f"Children: {', '.join(children) if children else 'No children.'}")
+
+        # Show parent
+        print(f"Parent: {parent.name if parent else 'No parent (Root person).'}")
+
+    def _get_names(self, person, exclude=None):
+        """Returns names of all siblings or children, optionally excluding a person."""
         names = []
         while person:
-            names.append(person.name)
+            if person.name != exclude:
+                names.append(person.name)
             person = person.sibling
         return names
 
     def _find_parent(self, current, target):
-        """Finds the parent of a specified person."""
-        if not current:
+        """Finds the parent of the given person."""
+        if not current or not target:
             return None
         if current.child == target:
             return current
@@ -166,7 +146,6 @@ class FamilyTree:
         return self._find_parent(current.child, target) or self._find_parent(current.sibling, target)
 
     def _iterate_siblings(self, person):
-        """Iterates through siblings."""
         while person:
             yield person
             person = person.sibling
@@ -178,7 +157,8 @@ class FamilyTree:
             return
 
         if self.root.name == name:
-            print("Cannot delete root person directly. Delete the tree instead.\n")
+            self.root = self.root.sibling
+            print(f"Root person '{name}' removed successfully.\n")
             return
 
         parent = self._find_parent(self.root, self.search(name))
@@ -186,7 +166,6 @@ class FamilyTree:
             print(f"Person '{name}' not found.\n")
             return
 
-        
         if parent.child and parent.child.name == name:
             parent.child = parent.child.sibling
         else:
@@ -199,6 +178,11 @@ class FamilyTree:
                 prev_sibling = sibling
 
         print(f"Person '{name}' removed successfully.\n")
+
+    def delete_tree(self):
+        """Deletes the entire family tree."""
+        self.root = None
+        print("Family tree deleted successfully.\n")
 
 
 def main():
