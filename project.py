@@ -1,3 +1,5 @@
+import csv
+
 class Person:
     def __init__(self, name="", age=0, gender=False):
         self.name = name
@@ -20,13 +22,69 @@ class Person:
             print(f"Input error: {e}")
             raise
 
-
 class FamilyTree:
-    def __init__(self):
+    def __init__(self, csv_file="family_tree.csv"):
         self.root = None
+        self.csv_file = csv_file
+        self.load_from_csv()
+
+    def save_to_csv(self):
+        """Saves the current family tree to the CSV file."""
+        with open(self.csv_file, "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Name", "Age", "Gender", "Parent", "Sibling"])
+            self._write_to_csv(self.root, None, writer)
+
+    def _write_to_csv(self, person, parent_name, writer):
+        if not person:
+            return
+        gender = "m" if person.gender else "f"
+        sibling_name = person.sibling.name if person.sibling else None
+        writer.writerow([person.name, person.age, gender, parent_name, sibling_name])
+        self._write_to_csv(person.child, person.name, writer)
+        self._write_to_csv(person.sibling, parent_name, writer)
+
+    def load_from_csv(self):
+        """Loads the family tree from the CSV file."""
+        try:
+            with open(self.csv_file, "r") as file:
+                reader = csv.DictReader(file)
+                nodes = {}
+
+                for row in reader:
+                    name = row["Name"]
+                    age = int(row["Age"])
+                    gender = row["Gender"] == "m"
+                    parent = row["Parent"]
+                    sibling = row["Sibling"]
+
+                    person = nodes.get(name, Person(name, age, gender))
+                    person.age = age
+                    person.gender = gender
+                    nodes[name] = person
+
+                    if parent:
+                        parent_node = nodes.get(parent)
+                        if not parent_node:
+                            parent_node = Person(parent)
+                            nodes[parent] = parent_node
+                        if not parent_node.child:
+                            parent_node.child = person
+                        else:
+                            self.add_sibling(parent_node.child, person)
+
+                    if sibling:
+                        sibling_node = nodes.get(sibling)
+                        if not sibling_node:
+                            sibling_node = Person(sibling)
+                            nodes[sibling] = sibling_node
+                        person.sibling = sibling_node
+
+                self.root = nodes.get(next(iter(nodes)) if nodes else None)
+        except FileNotFoundError:
+            print(f"CSV file '{self.csv_file}' not found. Starting with an empty family tree.")
 
     def add_person(self):
-        """Adds a new person to the tree."""
         try:
             new_person = Person()
             new_person.input_data()
@@ -34,6 +92,7 @@ class FamilyTree:
             if not self.root:
                 self.root = new_person
                 print("Root person added successfully.\n")
+                self.save_to_csv()
                 return
 
             related_name = input("\nEnter the name of the related person: ").strip()
@@ -55,6 +114,7 @@ class FamilyTree:
                 raise ValueError("Invalid choice. Enter 1 or 2.")
 
             print(f"Person '{new_person.name}' added successfully.\n")
+            self.save_to_csv()
         except Exception as e:
             print(f"Error adding person: {e}")
 
@@ -70,7 +130,6 @@ class FamilyTree:
         sibling.sibling = new_sibling
 
     def search(self, name):
-        """Searches for a person by name in the tree."""
         return self._search_recursive(self.root, name)
 
     def _search_recursive(self, current, name):
@@ -81,7 +140,6 @@ class FamilyTree:
         return self._search_recursive(current.child, name) or self._search_recursive(current.sibling, name)
 
     def display_tree(self):
-        """Displays the entire tree."""
         if not self.root:
             print("Family Tree is empty.\n")
         else:
@@ -96,8 +154,48 @@ class FamilyTree:
         self._display_recursive(person.child, level + 1)
         self._display_recursive(person.sibling, level)
 
+    def remove_person(self, name):
+        try:
+            if not self.root:
+                print("Family tree is empty.\n")
+                return
+
+            if self.root.name == name:
+                if self.root.child:
+                    print("Cannot remove root with children. Assign a new root first.")
+                    return
+                self.root = self.root.sibling
+                print(f"Root person '{name}' removed successfully.\n")
+                self.save_to_csv()
+                return
+
+            parent = self._find_parent(self.root, self.search(name))
+            if not parent:
+                print(f"Person '{name}' not found.\n")
+                return
+
+            if parent.child and parent.child.name == name:
+                parent.child = parent.child.sibling
+            else:
+                prev_sibling = None
+                for sibling in self._iterate_siblings(parent.child):
+                    if sibling.name == name:
+                        if prev_sibling:
+                            prev_sibling.sibling = sibling.sibling
+                        break
+                    prev_sibling = sibling
+
+            print(f"Person '{name}' removed successfully.\n")
+            self.save_to_csv()
+        except Exception as e:
+            print(f"Error removing person: {e}")
+
+    def delete_tree(self):
+        self.root = None
+        self.save_to_csv()
+        print("Family tree deleted successfully.\n")
+
     def show_person(self, name):
-        """Displays details of a specific person, including siblings, children, and parent."""
         try:
             person = self.search(name)
             if not person:
@@ -108,22 +206,18 @@ class FamilyTree:
             print(f"Age: {person.age}")
             print(f"Gender: {'Male' if person.gender else 'Female'}")
 
-            # Show siblings
             parent = self._find_parent(self.root, person)
             siblings = self._get_names(parent.child if parent else self.root, exclude=person.name)
             print(f"Siblings: {', '.join(siblings) if siblings else 'No siblings.'}")
 
-            # Show children
             children = self._get_names(person.child)
             print(f"Children: {', '.join(children) if children else 'No children.'}")
 
-            # Show parent
             print(f"Parent: {parent.name if parent else 'No parent (Root person).'}")
         except Exception as e:
             print(f"Error showing person details: {e}")
 
     def _get_names(self, person, exclude=None):
-        """Returns names of all siblings or children, optionally excluding a person."""
         names = []
         while person:
             if person.name != exclude:
@@ -132,7 +226,6 @@ class FamilyTree:
         return names
 
     def _find_parent(self, current, target):
-        """Finds the parent of the given person."""
         if not current or not target:
             return None
         if current.child == target:
@@ -147,48 +240,15 @@ class FamilyTree:
             yield person
             person = person.sibling
 
-    def remove_person(self, name):
-        """Removes a person by name from the tree."""
-        try:
-            if not self.root:
-                print("Family tree is empty.\n")
-                return
+    def _display_recursive(self, person, level=0):
+        if not person:
+            return
+        gender = "Male" if person.gender else "Female"
+        print("  " * level + f"|-- {person.name} (Age: {person.age}, Gender: {gender})")
+        self._display_recursive(person.child, level + 1)
+        self._display_recursive(person.sibling, level)
 
-            if self.root.name == name:
-                if self.root.child:
-                    print("Cannot remove root with children. Assign a new root first.")
-                    return
-                self.root = self.root.sibling
-                print(f"Root person '{name}' removed successfully.\n")
-                return
-
-            parent = self._find_parent(self.root, self.search(name))
-            if not parent:
-                print(f"Person '{name}' not found.\n")
-                return
-
-            # Remove person
-            if parent.child and parent.child.name == name:
-                parent.child = parent.child.sibling
-            else:
-                prev_sibling = None
-                for sibling in self._iterate_siblings(parent.child):
-                    if sibling.name == name:
-                        if prev_sibling:
-                            prev_sibling.sibling = sibling.sibling
-                        break
-                    prev_sibling = sibling
-
-            print(f"Person '{name}' removed successfully.\n")
-        except Exception as e:
-            print(f"Error removing person: {e}")
-
-    def delete_tree(self):
-        """Deletes the entire family tree."""
-        self.root = None
-        print("Family tree deleted successfully.\n")
-
-
+# Main program
 def main():
     tree = FamilyTree()
     while True:
@@ -226,7 +286,5 @@ def main():
         except Exception as e:
             print(f"Error: {e}")
 
-
 if __name__ == "__main__":
     main()
-
