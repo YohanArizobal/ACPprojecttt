@@ -42,12 +42,11 @@ def test_family_tree_add_root(family_tree):
 
 
 def test_family_tree_add_child(family_tree):
-    # Add root
+
     root_inputs = ["Alice", "40", "f"]
     with patch("builtins.input", side_effect=root_inputs):
         family_tree.add_person()
 
-    # Add child
     child_inputs = ["Bob", "10", "m", "Alice", "1"]
     with patch("builtins.input", side_effect=child_inputs):
         family_tree.add_person()
@@ -59,12 +58,11 @@ def test_family_tree_add_child(family_tree):
 
 
 def test_family_tree_add_sibling(family_tree):
-    # Add root
+
     root_inputs = ["Alice", "40", "f"]
     with patch("builtins.input", side_effect=root_inputs):
         family_tree.add_person()
 
-    # Add sibling
     sibling_inputs = ["Eve", "35", "f", "Alice", "2"]
     with patch("builtins.input", side_effect=sibling_inputs):
         family_tree.add_person()
@@ -76,40 +74,35 @@ def test_family_tree_add_sibling(family_tree):
 
 
 def test_family_tree_search(family_tree):
-    # Add root
+
     root_inputs = ["Alice", "40", "f"]
     with patch("builtins.input", side_effect=root_inputs):
         family_tree.add_person()
 
-    # Add child
     child_inputs = ["Bob", "10", "m", "Alice", "1"]
     with patch("builtins.input", side_effect=child_inputs):
         family_tree.add_person()
 
-    # Search for Bob
     bob = family_tree.search("Bob")
     assert bob is not None
     assert bob.name == "Bob"
     assert bob.age == 10
     assert bob.gender is True
 
-    # Search for a non-existent person
     non_existent = family_tree.search("Charlie")
     assert non_existent is None
 
 
 def test_display_tree(family_tree, capsys):
-    # Add root
+
     root_inputs = ["Alice", "40", "f"]
     with patch("builtins.input", side_effect=root_inputs):
         family_tree.add_person()
 
-    # Add child
     child_inputs = ["Bob", "10", "m", "Alice", "1"]
     with patch("builtins.input", side_effect=child_inputs):
         family_tree.add_person()
 
-    # Display tree
     family_tree.display_tree()
     captured = capsys.readouterr()
     assert "Alice" in captured.out
@@ -117,20 +110,17 @@ def test_display_tree(family_tree, capsys):
 
 
 def test_remove_person(family_tree):
-    # Add root
+
     root_inputs = ["Alice", "40", "f"]
     with patch("builtins.input", side_effect=root_inputs):
         family_tree.add_person()
 
-    # Add child
     child_inputs = ["Bob", "10", "m", "Alice", "1"]
     with patch("builtins.input", side_effect=child_inputs):
         family_tree.add_person()
 
-    # Remove child
     family_tree.remove_person("Bob")
     assert family_tree.root.child is None
 
-    # Remove root
     family_tree.remove_person("Alice")
     assert family_tree.root is None
